@@ -1,0 +1,1 @@
+This is a social media using react for frontend and supabase for backend.
