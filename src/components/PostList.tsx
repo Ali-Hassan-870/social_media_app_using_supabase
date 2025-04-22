@@ -32,7 +32,7 @@ export const PostList = () => {
   return (
     <div className="flex flex-wrap gap-6 justify-center">
       {data?.map((post) => (
-        <PostItem post={post} />
+        <PostItem key={post.id} post={post} />
       ))}
     </div>
   );

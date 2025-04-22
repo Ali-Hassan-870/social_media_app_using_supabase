@@ -1,12 +1,14 @@
 import React, { ChangeEvent, useState } from "react";
 import { supabase } from "../supabase-client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
+import { Community, fetchCommunities } from "./CommunityList";
 
 interface PostInput {
   title: string;
   content: string;
   avatar_url?: string;
+  community_id?: number | null;
 }
 
 const createPost = async (post: PostInput, imageFile: File) => {
@@ -36,8 +38,9 @@ export const CreatePost = () => {
   const [content, setContent] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [communityId, setCommunityId] = useState<number | null>(null);
 
-  const {user} = useAuth();
+  const { user } = useAuth();
 
   const { mutate, isPending, isError, isSuccess } = useMutation({
     mutationFn: (data: { post: PostInput; imageFile: File }) => {
@@ -45,11 +48,24 @@ export const CreatePost = () => {
     },
   });
 
+  const { data: communities } = useQuery<Community[], Error>({
+    queryKey: ["communities"],
+    queryFn: fetchCommunities,
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) return;
     mutate(
-      { post: { title, content, avatar_url: user?.user_metadata.avatar_url || null }, imageFile: selectedFile },
+      {
+        post: {
+          title,
+          content,
+          avatar_url: user?.user_metadata.avatar_url || null,
+          community_id: communityId,
+        },
+        imageFile: selectedFile,
+      },
       {
         onSuccess: () => {
           setTitle("");
@@ -59,6 +75,11 @@ export const CreatePost = () => {
         },
       }
     );
+  };
+
+  const handleCommunityChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setCommunityId(value ? Number(value) : null);
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -112,6 +133,18 @@ export const CreatePost = () => {
             placeholder="Share your thoughts here..."
             className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 text-white placeholder-gray-400 resize-none"
           />
+        </div>
+
+        <div>
+          <label> Select Community</label>
+          <select id="community" onChange={handleCommunityChange}>
+            <option value={""}> -- Choose a Community -- </option>
+            {communities?.map((community, key) => (
+              <option key={key} value={community.id}>
+                {community.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">
